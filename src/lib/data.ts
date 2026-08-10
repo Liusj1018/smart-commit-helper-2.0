@@ -1,49 +1,7 @@
 import type { Commit, PullRequest, Member, PlanTask, OverviewStats } from "@/types";
 export type { CommitType } from "@/types";
 import type { CommitType } from "@/types";
-
-const MEMBERS: Member[] = [
-  {
-    id: "1",
-    name: "Alice Chen",
-    avatar: "AC",
-    role: "Tech Lead",
-    commitsThisWeek: 23,
-    totalCommits: 342,
-    activeDays: 5,
-    heatmap: [3, 5, 2, 8, 4, 1, 0, 6, 7, 3, 5, 2, 8, 4, 1, 0, 6, 7, 3, 5, 2, 8, 4, 1, 0, 6, 7, 3],
-  },
-  {
-    id: "2",
-    name: "Bob Wang",
-    avatar: "BW",
-    role: "Frontend Dev",
-    commitsThisWeek: 18,
-    totalCommits: 256,
-    activeDays: 4,
-    heatmap: [2, 4, 1, 6, 3, 0, 0, 5, 6, 2, 4, 1, 6, 3, 0, 0, 5, 6, 2, 4, 1, 6, 3, 0, 0, 5, 6, 2],
-  },
-  {
-    id: "3",
-    name: "Carol Li",
-    avatar: "CL",
-    role: "Backend Dev",
-    commitsThisWeek: 15,
-    totalCommits: 198,
-    activeDays: 5,
-    heatmap: [4, 3, 5, 2, 1, 0, 0, 4, 3, 4, 3, 5, 2, 1, 0, 0, 4, 3, 4, 3, 5, 2, 1, 0, 0, 4, 3, 4],
-  },
-  {
-    id: "4",
-    name: "David Zhang",
-    avatar: "DZ",
-    role: "DevOps",
-    commitsThisWeek: 9,
-    totalCommits: 134,
-    activeDays: 3,
-    heatmap: [1, 2, 0, 3, 2, 1, 0, 1, 2, 1, 2, 0, 3, 2, 1, 0, 1, 2, 1, 2, 0, 3, 2, 1, 0, 1, 2, 1],
-  },
-];
+import { backendListMembers, type BackendMember } from "./api";
 
 const COMMITS: Commit[] = [
   { id: "1", hash: "a1b2c3d", message: "feat(dashboard): add overview cards", author: "Alice Chen", authorId: "1", type: "feat", date: "2026-08-07", additions: 142, deletions: 23 },
@@ -94,12 +52,41 @@ export async function getPullRequests(): Promise<PullRequest[]> {
   return PULL_REQUESTS;
 }
 
+/**
+ * Fetch members from the backend API.
+ *
+ * The backend returns paginated results; we fetch the first page
+ * with a large page size to get all members for the current team.
+ */
 export async function getMembers(): Promise<Member[]> {
-  return MEMBERS;
+  try {
+    const res = await backendListMembers({ page: 1, page_size: 100 });
+    return res.items.map(mapBackendMember);
+  } catch {
+    // When the backend is unreachable or the user is not
+    // authenticated we return an empty array so the page can
+    // still render gracefully.
+    return [];
+  }
 }
 
 export async function getMemberById(id: string): Promise<Member | undefined> {
-  return MEMBERS.find((m) => m.id === id);
+  const members = await getMembers();
+  return members.find((m) => m.id === id);
+}
+
+/** Convert a backend member DTO to the frontend Member type. */
+function mapBackendMember(b: BackendMember): Member {
+  return {
+    id: b.id,
+    team_id: b.team_id,
+    name: b.name,
+    email: b.email,
+    role: b.role,
+    github_username: b.github_username,
+    created_at: b.created_at,
+    updated_at: b.updated_at,
+  };
 }
 
 export async function getPlanTasks(): Promise<PlanTask[]> {

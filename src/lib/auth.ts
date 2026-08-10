@@ -1,96 +1,111 @@
-import { cookies } from "next/headers";
-import { timingSafeEqual, createHmac, randomBytes } from "crypto";
+/**
+ * Authentication helpers — backed by the Smart Commit Helper API.
+ *
+ * The backend issues short-lived JWT access tokens (15 min) and
+ * longer-lived refresh tokens (7 days).  Both are stored in
+ * httpOnly cookies; the access token is attached to every API
+ * request as a Bearer token.
+ *
+ * When the access token expires we transparently exchange the
+ * refresh token for a new pair.
+ */
 
-const SESSION_COOKIE_NAME = "sd_session";
-const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+import "server-only";
 
-// Secret management: SESSION_SECRET can be set via environment variable.
-// For the demo deployment a fallback is used so Vercel deployments work
-// without additional configuration.
-const SESSION_SECRET = process.env.SESSION_SECRET || "smart-dashboard-demo-secret-2026";
-const isProduction = process.env.NODE_ENV === "production";
+import {
+  backendGetMe,
+  backendLogin,
+  backendLogout,
+  backendRefresh,
+  clearAuthCookies,
+  getAccessToken,
+  getRefreshToken,
+  setAuthCookies,
+  type BackendMeResponse,
+} from "./api";
 
-const DEMO_USER = {
-  email: "demo@smartdashboard.dev",
-  passwordHash: "demo-password-123",
-  name: "Demo User",
-};
+export type SessionUser = BackendMeResponse;
 
-function constantTimeEqual(a: string, b: string): boolean {
-  const aBuf = Buffer.from(a);
-  const bBuf = Buffer.from(b);
-  if (aBuf.length !== bBuf.length) return false;
-  return timingSafeEqual(aBuf, bBuf);
+export interface AuthResult {
+  success: boolean;
+  error?: string;
 }
 
-/** Sign session token with HMAC-SHA256 to prevent tampering */
-function signToken(token: string): string {
-  return createHmac("sha256", SESSION_SECRET).update(token).digest("hex");
-}
-
-/** Verify session token signature using constant-time comparison */
-function verifyToken(token: string, signature: string): boolean {
-  const expected = signToken(token);
-  return constantTimeEqual(signature, expected);
-}
-
+/**
+ * Authenticate against the backend and persist tokens in cookies.
+ */
 export async function authenticate(
   email: string,
-  password: string
-): Promise<{ success: boolean; error?: string }> {
-  if (!email || !password) {
-    return { success: false, error: "邮箱和密码不能为空" };
+  password: string,
+): Promise<AuthResult> {
+  try {
+    const tokens = await backendLogin(email, password);
+    await setAuthCookies(
+      tokens.access_token,
+      tokens.refresh_token,
+      tokens.expires_in,
+    );
+    return { success: true };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "登录失败，请稍后重试";
+    return { success: false, error: message };
   }
-  if (email.length > 254 || password.length > 128) {
-    return { success: false, error: "输入长度超出限制" };
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return { success: false, error: "邮箱格式不正确" };
-  }
-
-  const emailMatch = constantTimeEqual(email.toLowerCase().trim(), DEMO_USER.email);
-  const passwordMatch = constantTimeEqual(password, DEMO_USER.passwordHash);
-
-  if (!emailMatch || !passwordMatch) {
-    return { success: false, error: "邮箱或密码错误" };
-  }
-
-  // Generate cryptographically secure session token with HMAC signature
-  const rawToken = randomBytes(32).toString("hex");
-  const signature = signToken(rawToken);
-  const sessionToken = `${rawToken}.${signature}`;
-
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax",
-    maxAge: SESSION_MAX_AGE,
-    path: "/",
-  });
-
-  return { success: true };
 }
 
-export async function logout(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+/**
+ * Return the current user, or null when not authenticated.
+ *
+ * Attempts to use the access token; on 401 it tries to refresh
+ * the token pair once.
+ */
+export async function getCurrentUser(): Promise<SessionUser | null> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return null;
+  }
+
+  try {
+    return await backendGetMe();
+  } catch (err) {
+    // If access token expired, try refresh
+    const refreshToken = await getRefreshToken();
+    if (!refreshToken) return null;
+
+    try {
+      const tokens = await backendRefresh(refreshToken);
+      await setAuthCookies(
+        tokens.access_token,
+        tokens.refresh_token,
+        tokens.expires_in,
+      );
+      return await backendGetMe();
+    } catch {
+      await clearAuthCookies();
+      return null;
+    }
+  }
 }
 
+/**
+ * Check whether the current visitor is authenticated.
+ */
 export async function isAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const session = cookieStore.get(SESSION_COOKIE_NAME);
-  if (!session?.value) return false;
-
-  const [token, signature] = session.value.split(".");
-  if (!token || !signature) return false;
-
-  return verifyToken(token, signature);
+  const user = await getCurrentUser();
+  return user !== null;
 }
 
-export async function getCurrentUser(): Promise<{ email: string; name: string } | null> {
-  const authenticated = await isAuthenticated();
-  if (!authenticated) return null;
-  return { email: DEMO_USER.email, name: DEMO_USER.name };
+/**
+ * Log out: blacklist the refresh token on the backend and clear cookies.
+ */
+export async function logout(): Promise<void> {
+  const refreshToken = await getRefreshToken();
+  if (refreshToken) {
+    try {
+      await backendLogout(refreshToken);
+    } catch {
+      // Ignore errors — we clear cookies regardless
+    }
+  }
+  await clearAuthCookies();
 }

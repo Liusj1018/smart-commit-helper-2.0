@@ -68,9 +68,6 @@ export function LoginForm() {
                 aria-describedby="email-hint"
               />
             </div>
-            <p id="email-hint" className="text-xs text-muted-foreground">
-              演示账号: demo@smartdashboard.dev
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -89,9 +86,6 @@ export function LoginForm() {
                 aria-describedby="password-hint"
               />
             </div>
-            <p id="password-hint" className="text-xs text-muted-foreground">
-              演示密码: demo-password-123
-            </p>
           </div>
 
           <SubmitButton />

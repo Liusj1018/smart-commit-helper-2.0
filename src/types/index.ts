@@ -24,15 +24,17 @@ export interface PullRequest {
   reviewers: string[];
 }
 
+export type MemberRole = "member" | "admin" | "developer" | "viewer";
+
 export interface Member {
   id: string;
+  team_id: string;
   name: string;
-  avatar: string;
-  role: string;
-  commitsThisWeek: number;
-  totalCommits: number;
-  activeDays: number;
-  heatmap: number[];
+  email: string;
+  role: MemberRole;
+  github_username: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PlanTask {
