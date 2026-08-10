@@ -92,6 +92,9 @@ export function LoginForm() {
         </form>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
+          演示账号：demo@smartdashboard.dev / demo-password-123
+        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
           登录即表示您同意我们的服务条款和隐私政策
         </p>
       </CardContent>
