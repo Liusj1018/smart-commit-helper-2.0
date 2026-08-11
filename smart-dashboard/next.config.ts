@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import path from "path";
+
+const projectRoot = path.resolve(process.cwd());
 
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
@@ -29,7 +32,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: __dirname,
+    root: projectRoot,
   },
   async headers() {
     return [
