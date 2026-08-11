@@ -225,3 +225,63 @@ export async function backendListMembers(params?: {
     { tags: ["members"] },
   );
 }
+
+export async function backendCreateMember(input: {
+  name: string;
+  email: string;
+  password: string;
+  role: MemberRole;
+  github_username?: string | null;
+}): Promise<BackendMember> {
+  return apiFetch<BackendMember>("/members", {
+    method: "POST",
+    body: input,
+    tags: ["members"],
+  });
+}
+
+export async function backendDeleteMember(
+  memberId: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/members/${memberId}`, {
+    method: "DELETE",
+    tags: ["members"],
+  });
+}
+
+// ─── Commits API ─────────────────────────────────────────────────
+
+export interface BackendCommit {
+  id: string;
+  member_id: string;
+  sha: string;
+  message: string;
+  repository: string;
+  branch: string;
+  lines_added: number;
+  lines_deleted: number;
+  ai_percentage: number;
+  committed_at: string;
+}
+
+export async function backendListCommits(params?: {
+  page?: number;
+  page_size?: number;
+  member_id?: string;
+  repository?: string;
+  start_date?: string;
+  end_date?: string;
+}): Promise<PaginatedResponse<BackendCommit>> {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.page_size) search.set("page_size", String(params.page_size));
+  if (params?.member_id) search.set("member_id", params.member_id);
+  if (params?.repository) search.set("repository", params.repository);
+  if (params?.start_date) search.set("start_date", params.start_date);
+  if (params?.end_date) search.set("end_date", params.end_date);
+  const qs = search.toString();
+  return apiFetch<PaginatedResponse<BackendCommit>>(
+    `/commits${qs ? `?${qs}` : ""}`,
+    { tags: ["commits"] },
+  );
+}
