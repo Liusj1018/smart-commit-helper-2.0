@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getOverviewStats, getAllCommits, getPullRequests, getPlanTasks } from "@/lib/data";
@@ -44,23 +45,29 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">总提交数</CardTitle>
-            <GitCommit className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCommits}</div>
-          </CardContent>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md">
+          <Link href="/commits">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">总提交数</CardTitle>
+              <GitCommit className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCommits}</div>
+              <p className="mt-1 text-xs text-muted-foreground">点击查看每人提交详情 →</p>
+            </CardContent>
+          </Link>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">待审 PR</CardTitle>
-            <GitPullRequest className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.openPRs}</div>
-          </CardContent>
+        <Card className="cursor-pointer transition-shadow hover:shadow-md">
+          <Link href="/pull-requests">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">待审 PR</CardTitle>
+              <GitPullRequest className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.openPRs}</div>
+              <p className="mt-1 text-xs text-muted-foreground">点击进入 PR 审查 →</p>
+            </CardContent>
+          </Link>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
