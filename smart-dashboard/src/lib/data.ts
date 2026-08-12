@@ -17,11 +17,14 @@ const COMMITS: Commit[] = [
 ];
 
 const PULL_REQUESTS: PullRequest[] = [
-  { id: "1", title: "feat: add member heatmap component", author: "Alice Chen", status: "pending", createdAt: "2026-08-07", updatedAt: "2026-08-07", reviewers: ["Bob Wang", "Carol Li"] },
-  { id: "2", title: "fix: resolve login redirect loop", author: "Bob Wang", status: "approved", createdAt: "2026-08-06", updatedAt: "2026-08-07", reviewers: ["Alice Chen"] },
-  { id: "3", title: "refactor: extract shared card component", author: "Carol Li", status: "merged", createdAt: "2026-08-05", updatedAt: "2026-08-06", reviewers: ["Alice Chen", "David Zhang"] },
-  { id: "4", title: "chore: configure ci pipeline", author: "David Zhang", status: "changes_requested", createdAt: "2026-08-04", updatedAt: "2026-08-05", reviewers: ["Alice Chen"] },
-  { id: "5", title: "feat: add plan mode tracking", author: "Alice Chen", status: "pending", createdAt: "2026-08-07", updatedAt: "2026-08-07", reviewers: ["Carol Li"] },
+  { id: "1", title: "feat: add member heatmap component", author: "Alice Chen", status: "pending", createdAt: "2026-08-07", updatedAt: "2026-08-07", reviewers: ["Bob Wang", "Carol Li"], reviewTimeHours: 0 },
+  { id: "2", title: "fix: resolve login redirect loop", author: "Bob Wang", status: "approved", createdAt: "2026-08-06", updatedAt: "2026-08-07", reviewers: ["Alice Chen"], reviewTimeHours: 25.8 },
+  { id: "3", title: "refactor: extract shared card component", author: "Carol Li", status: "merged", createdAt: "2026-08-05", updatedAt: "2026-08-06", reviewers: ["Alice Chen", "David Zhang"], reviewTimeHours: 18.5 },
+  { id: "4", title: "chore: configure ci pipeline", author: "David Zhang", status: "changes_requested", createdAt: "2026-08-04", updatedAt: "2026-08-05", reviewers: ["Alice Chen"], reviewTimeHours: 21.7 },
+  { id: "5", title: "feat: add plan mode tracking", author: "Alice Chen", status: "pending", createdAt: "2026-08-07", updatedAt: "2026-08-07", reviewers: ["Carol Li"], reviewTimeHours: 0 },
+  { id: "6", title: "feat: implement commit type chart", author: "Bob Wang", status: "merged", createdAt: "2026-08-03", updatedAt: "2026-08-04", reviewers: ["Alice Chen", "Carol Li"], reviewTimeHours: 12.3 },
+  { id: "7", title: "fix: correct week boundary calculation", author: "Alice Chen", status: "approved", createdAt: "2026-08-02", updatedAt: "2026-08-03", reviewers: ["Bob Wang"], reviewTimeHours: 8.5 },
+  { id: "8", title: "perf: memoize chart data computation", author: "Carol Li", status: "merged", createdAt: "2026-08-01", updatedAt: "2026-08-02", reviewers: ["David Zhang"], reviewTimeHours: 15.2 },
 ];
 
 const PLAN_TASKS: PlanTask[] = [
@@ -36,10 +39,14 @@ const PLAN_TASKS: PlanTask[] = [
 ];
 
 export async function getOverviewStats(): Promise<OverviewStats> {
+  const reviewed = PULL_REQUESTS.filter((pr) => (pr.reviewTimeHours ?? 0) > 0);
+  const avgHours = reviewed.length > 0
+    ? reviewed.reduce((sum, pr) => sum + (pr.reviewTimeHours ?? 0), 0) / reviewed.length
+    : 0;
   return {
     totalCommits: COMMITS.length,
     openPRs: PULL_REQUESTS.filter((pr) => pr.status === "pending").length,
-    avgReviewTime: "4.2h",
+    avgReviewTime: `${avgHours.toFixed(1)}h`,
     planCompletion: Math.round((PLAN_TASKS.filter((t) => t.completed).length / PLAN_TASKS.length) * 100),
   };
 }

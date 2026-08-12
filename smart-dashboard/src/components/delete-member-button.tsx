@@ -60,17 +60,19 @@ export function DeleteMemberButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:text-destructive"
-          disabled={disabled}
-          title={tooltip}
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-          <span className="sr-only">删除 {memberName}</span>
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={disabled}
+            title={tooltip}
+          />
+        }
+      >
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
+        <span className="sr-only">删除 {memberName}</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

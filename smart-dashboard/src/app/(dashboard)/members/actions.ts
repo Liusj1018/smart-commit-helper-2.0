@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import {
   backendCreateMember,
   backendDeleteMember,
@@ -53,7 +52,7 @@ export async function createMemberAction(
   return { success: `成员 ${name} 已添加` };
 }
 
-export async function deleteMemberAction(
+export async function deleteMember(
   memberId: string,
 ): Promise<MemberFormState> {
   const user = await getCurrentUser();
@@ -69,5 +68,5 @@ export async function deleteMemberAction(
   }
 
   revalidatePath("/members");
-  redirect("/members");
+  return { success: "成员已删除" };
 }

@@ -22,6 +22,7 @@ export interface PullRequest {
   createdAt: string;
   updatedAt: string;
   reviewers: string[];
+  reviewTimeHours?: number;
 }
 
 export type MemberRole = "member" | "admin" | "developer" | "viewer";
